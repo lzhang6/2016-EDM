@@ -10,12 +10,10 @@
 # You can find the practical guide on Appendix A
 import numpy as np
 import tensorflow as tf
-from tensorflow.models.rnn import rnn_cell
 import time
 import csv
 from random import shuffle
 import random
-from tensorflow.models.rnn import rnn
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 from sklearn import metrics
@@ -36,20 +34,17 @@ class StudentModel(object):
         self._target_id = target_id = tf.placeholder(tf.int32, [None])
         self._target_correctness = target_correctness = tf.placeholder(tf.float32, [None])
 
-        hidden1 = rnn_cell.LSTMCell(size, input_size)
-        #hidden2 = rnn_cell.LSTMCell(size, size)
-        #hidden3 = rnn_cell.LSTMCell(size, size)
+        hidden1 = tf.nn.rnn_cell.LSTMCell(size, state_is_tuple=True)
+        #hidden2 = tf.nn.rnn_cell.LSTMCell(size)
+        #hidden3 = tf.nn.rnn_cell.LSTMCell(size)
 
         #add dropout layer between hidden layers
         if is_training and config.keep_prob < 1:
-            hidden1 = rnn_cell.DropoutWrapper(hidden1, output_keep_prob=config.keep_prob)
-            #hidden2 = rnn_cell.DropoutWrapper(hidden2, output_keep_prob=config.keep_prob)
-            #hidden3 = rnn_cell.DropoutWrapper(hidden3, output_keep_prob=config.keep_prob)
+            hidden1 = tf.nn.rnn_cell.DropoutWrapper(hidden1, output_keep_prob=config.keep_prob)
+            #hidden2 = tf.nn.rnn_cell.DropoutWrapper(hidden2, output_keep_prob=config.keep_prob)
+            #hidden3 = tf.nn.rnn_cell.DropoutWrapper(hidden3, output_keep_prob=config.keep_prob)
 
-        cell = rnn_cell.MultiRNNCell([hidden1])
-
-        # initial state
-        self._initial_state = cell.zero_state(batch_size, tf.float32)
+        #cell = tf.nn.rnn_cell.MultiRNNCell([hidden1])
 
         input_data = tf.reshape(self._input_data, [-1])
         #one-hot encoding
@@ -61,11 +56,16 @@ class StudentModel(object):
             inputs.set_shape([batch_size*num_steps, input_size])
 
         # [batch_size, num_steps, input_size]
-        inputs = tf.reshape(inputs, [batch_size, num_steps, input_size])
-        inputs = [tf.squeeze(input_, [1]) for input_ in tf.split(1, num_steps, inputs)]
-        outputs, state = rnn.rnn(cell, inputs, initial_state=self._initial_state)
+        inputs = tf.reshape(inputs, [-1, num_steps, input_size])
+        x = tf.transpose(inputs, [1, 0, 2])
+        # Reshape to (n_steps*batch_size, n_input)
+        x = tf.reshape(x, [-1, input_size])
+        # Split to get a list of 'n_steps'
+        # tensors of shape (doc_num, n_input)
+        x = tf.split(0, num_steps, x)
+        #inputs = [tf.squeeze(input_, [1]) for input_ in tf.split(1, num_steps, inputs)]
+        outputs, state = tf.nn.rnn(hidden1, x, dtype=tf.float32)
 
-        #state = self._initial_state
         #with tf.variable_scope("RNN"):
         #    (cell_output, state) = cell(inputs, state)
         #    self._final_state = state
@@ -267,13 +267,13 @@ def main(unused_args):
   eval_config = HyperParamsConfig()
   eval_config.batch_size = 1
 
-  train_data_path = "your train data set" #the path to your train data set
+  train_data_path = "data/0910_a_train.csv" #the path to your train data set
   #path to your test data set
-  test_data_path = "your test data set"
+  test_data_path = "data/0910_a_test.csv"
   #the file to store your test results
-  result_file_path = "your result file"
+  result_file_path = "run_logs"
   #your model name
-  model_name = "your model name"
+  model_name = "DKT"
 
   train_students, train_max_num_problems = read_data_from_csv_file(train_data_path)
   config.num_steps = train_max_num_problems
@@ -281,26 +281,16 @@ def main(unused_args):
   test_students, test_max_num_problems = read_data_from_csv_file(test_data_path)
   eval_config.num_steps = test_max_num_problems
 
-  start_over = True #if False, will store variables from disk
-
   with tf.Graph().as_default(), tf.Session() as session:
-
-    if(start_over):
-        initializer = tf.random_uniform_initializer(-config.init_scale,
+    initializer = tf.random_uniform_initializer(-config.init_scale,
                                                 config.init_scale)
-    else:
-        #restore variables from disk, make sure file exists
-        saver.restore(session, model_name)
-        print "Model restored"
+
     # training model
     with tf.variable_scope("model", reuse=None, initializer=initializer):
       m = StudentModel(is_training=True, config=config)
     # testing model
     with tf.variable_scope("model", reuse=True, initializer=initializer):
       mtest = StudentModel(is_training=False, config=eval_config)
-
-    tf.initialize_all_variables().run()
-    saver = tf.train.Saver()
 
     # log hyperparameters to results file
     with open(result_file_path, "a+") as f:
@@ -309,7 +299,9 @@ def main(unused_args):
         f.write("Dropout rate: %.3f \n" % (config.keep_prob))
         f.write("Batch size: %d \n" % (config.batch_size))
         f.write("Max grad norm: %d \n" % (config.max_grad_norm))
-
+    tf.initialize_all_variables().run()
+    saver = tf.train.Saver(tf.all_variables())
+    
     for i in range(config.max_max_epoch):
       lr_decay = config.lr_decay ** max(i - config.max_epoch, 0)
       m.assign_lr(session, config.learning_rate * lr_decay)

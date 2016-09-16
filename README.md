@@ -1,14 +1,20 @@
 # 2016-EDM
 Source code and data sets for 2016 EDM
 
-Dependencies:
-Tensorflow
-Numpy
-scikit-learn
+### Dependencies:
+- Tensorflow 0.10 (only tested on this version)
+- Numpy
+- scikit-learn
 
-To run the code, type in 'python student_model.py' in command line.
+### Get Started
 
-Before running it, you should specify your training dataset and testing dataset in student_model.py
+```
+git clone https://github.com/siyuanzhao/2016-EDM.git
+cd 2016-EDM
+python student_model.py
+```
+
+To run model on different dataset, change train_data_path and test_data_path in student_model.py
 
 Data sets we used from the paper are in folder data.
 
