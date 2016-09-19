@@ -1,5 +1,5 @@
-# 2016-EDM
-Source code and data sets for 2016 EDM
+# [Going Deeper with Deep Knowledge Tracing](http://www.educationaldatamining.org/EDM2016/proceedings/paper_133.pdf) - EDM-2016
+Source code and data sets for [Going Deeper with Deep Knowledge Tracing](http://www.educationaldatamining.org/EDM2016/proceedings/paper_133.pdf)
 
 ### Dependencies:
 - Tensorflow 0.10 (only tested on this version)
@@ -14,8 +14,32 @@ cd 2016-EDM
 python student_model.py
 ```
 
-To run model on different dataset, change train_data_path and test_data_path in student_model.py
+### Usage
+There are serval flags within student_model.py. Some of them are hyper-parameters for the model. Some of them are path to training and testing data.
 
+Check all available flags with the following command.
+
+```
+python student_model.py -h
+```
+
+Run the model on a different data set
+
+```
+python student_model.py --train_data_path=<path-to-your-data> --test_data_path=<path-to-your-data>
+```
+You can also set the number of hidden layers and the number of hidden nodes with flags.
+
+```
+python student_model.py --hidden_layer_num=2 --hidden_size=400
+```
+
+### Details
+- The model uses [Adam Optimizer](https://arxiv.org/abs/1412.6980).
+- Add gradient noise. [arxiv](http://arxiv.org/abs/1511.06807)
+- Add gradient norm clipping. [arxiv](http://www.jmlr.org/proceedings/papers/v28/pascanu13.pdf)
+
+### Datasets
 Data sets we used from the paper are in folder data.
 
 <table>
@@ -58,3 +82,6 @@ Data sets we used from the paper are in folder data.
 </table>
 
 CAT_train.csv and CAT_test.csv are data files from Cognitive Tutor.
+
+### Results
+Since I made some changes on the code, I will run the model again and record the results.
