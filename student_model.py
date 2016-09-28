@@ -101,9 +101,9 @@ class StudentModel(object):
         #inputs = [tf.squeeze(input_, [1]) for input_ in tf.split(1, num_steps, inputs)]
         outputs, state = tf.nn.rnn(hidden1, x, dtype=tf.float32)
 
-        output = tf.reshape(tf.concat(1, outputs), [-1, final_hidden_size])
+        output = tf.reshape(tf.concat(1, outputs), [-1, int(final_hidden_size)])
         # calculate the logits from last hidden layer to output layer
-        sigmoid_w = tf.get_variable("sigmoid_w", [final_hidden_size, num_skills])
+        sigmoid_w = tf.get_variable("sigmoid_w", [int(final_hidden_size), num_skills])
         sigmoid_b = tf.get_variable("sigmoid_b", [num_skills])
         logits = tf.matmul(output, sigmoid_w) + sigmoid_b
 
@@ -228,7 +228,7 @@ def read_data_from_csv_file(fileName):
             rows.append(row)
     index = 0
     i = 0
-    print "the number of rows is " + str(len(rows))
+    print ("the number of rows is ", str(len(rows)))
     tuple_rows = []
     #turn list to tuple
     while(index < len(rows)-1):
@@ -247,8 +247,8 @@ def read_data_from_csv_file(fileName):
     #shuffle the tuple
 
     random.shuffle(tuple_rows)
-    print "The number of students is ", len(tuple_rows)
-    print "Finish reading data"
+    print ("The number of students is ", len(tuple_rows))
+    print ("Finish reading data")
     return tuple_rows, max_num_problems, max_skill_num+1
 
 def main(unused_args):
@@ -313,7 +313,7 @@ def main(unused_args):
                 print("Epoch: %d Train Metrics:\n rmse: %.3f \t auc: %.3f \t r2: %.3f \n" % (i + 1, rmse, auc, r2))
 
                 if((i+1) % FLAGS.evaluation_interval == 0):
-                    print "Save variables to disk"
+                    print ("Save variables to disk")
                     save_path = saver.save(session, model_name)
                     print("*"*10)
                     print("Start to test model....")
